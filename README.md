@@ -36,6 +36,18 @@ Support legal voter migration without duplicate voting
 
 Enable role-based electoral administration
 
+## System Architecture
+
+Frontend (Web UI)
+        |
+Backend APIs
+        |
+Unified Electoral Database (Core)
+        |           |
+     AI/ML       Blockchain
+ (Dedup/DSE)   (Audit Hashes)
+
+
 Preserve audit trails and data integrity
 
 Support multilingual electoral rolls
