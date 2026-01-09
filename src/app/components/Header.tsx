@@ -25,10 +25,10 @@ export function Header({ currentUser, onLogout }: HeaderProps) {
               </div>
               <div>
                 <h1 className="text-lg font-semibold text-[#003d82]">
-                  UNPER
+                  CEMS
                 </h1>
                 <p className="text-xs text-gray-600">
-                  Unified National Electoral Roll
+                  Central Electoral Management System
                 </p>
               </div>
             </div>

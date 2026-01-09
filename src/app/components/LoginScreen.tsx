@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { User, Lock, ChevronDown } from "lucide-react";
+import { post } from "../../services/apiClients";
 
 interface LoginScreenProps {
   onLogin: (username: string, role: string, additionalInfo?: { state?: string; district?: string }) => void;
@@ -11,6 +12,8 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
   const [role, setRole] = useState("CEO");
   const [state, setState] = useState("Maharashtra");
   const [district, setDistrict] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   const roles = [
     { value: "CEC", label: "Chief Election Commissioner" },
@@ -27,16 +30,41 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const additionalInfo: { state?: string; district?: string } = {};
-    
-    if (role === "CEO" || role === "DEO" || role === "RO" || role === "BLO") {
-      additionalInfo.state = state;
-      if (role === "DEO" || role === "RO" || role === "BLO") {
-        additionalInfo.district = district || districts[0];
+    (async () => {
+      const additionalInfo: { state?: string; district?: string } = {};
+      try {
+        setLoading(true);
+        setErrorMsg("");
+
+        if (role === "CEO" || role === "DEO" || role === "RO" || role === "BLO") {
+          additionalInfo.state = state;
+          if (role === "DEO" || role === "RO" || role === "BLO") {
+            additionalInfo.district = district || districts[0];
+          }
+        }
+
+        // Call backend login API. Expecting { success, data: { token, user } }
+        const payload = { username, password, role, state: additionalInfo.state, district: additionalInfo.district };
+        const res: any = await post("/auth/login", payload);
+
+        const token = res?.data?.token;
+        const user = res?.data?.user;
+
+        if (!token) {
+          throw new Error(res?.message || "Login failed: no token received");
+        }
+
+        // Persist token so apiClient will include it
+        localStorage.setItem("authToken", token);
+
+        // Pass back user info to App. Use returned user when available, otherwise local values.
+        onLogin(user?.name || username || "User", user?.role || role, { state: user?.state || additionalInfo.state, district: user?.district || additionalInfo.district });
+      } catch (err: any) {
+        setErrorMsg(err?.message || "Login failed");
+      } finally {
+        setLoading(false);
       }
-    }
-    
-    onLogin(username || "User", role, additionalInfo);
+    })();
   };
 
   return (
@@ -51,10 +79,10 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
               </div>
             </div>
           </div>
-          <h1 className="text-3xl font-bold mb-2 text-center">UNPER</h1>
-          <p className="text-lg mb-4 text-center">Unified National Electoral Roll</p>
+          <h1 className="text-3xl font-bold mb-2 text-center">CEMS</h1>
+          <p className="text-lg mb-4 text-center">Central Electoral Management System</p>
           <p className="text-sm text-blue-200 text-center max-w-sm">
-            एकीकृत राष्ट्रीय निर्वाचक नामावली प्रबंधन प्रणाली
+            केंद्रीय निर्वाचक प्रबंधन प्रणाली
           </p>
           <div className="mt-8 pt-8 border-t border-blue-400 w-full">
             <p className="text-center text-sm">Election Commission of India</p>
@@ -70,6 +98,9 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {errorMsg && (
+              <div className="text-sm text-red-600 bg-red-50 border border-red-100 p-3 rounded">{errorMsg}</div>
+            )}
             {/* Role Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -164,9 +195,10 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full bg-[#003d82] text-white py-3 rounded-lg hover:bg-[#002d62] transition-colors shadow-lg"
+              disabled={loading}
+              className={`w-full bg-[#003d82] text-white py-3 rounded-lg hover:bg-[#002d62] transition-colors shadow-lg ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
             >
-              Login to UNPER
+              {loading ? 'Logging in...' : 'Login to CEMS'}
             </button>
 
             {/* Footer */}
