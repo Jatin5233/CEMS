@@ -4,15 +4,14 @@ import { apiClient } from "../services/apiClients";
 export interface PollingStation {
   id: string;
   name: string;
-  code: string;
-  district: string;
+  nameLocal: string;
   constituency: string;
-  location: string;
   address: string;
-  capacity: number;
-  assignedBLOs: number;
-  electorsRegistered: number;
+  electors: number;
+  male: number;
+  female: number;
   status: "active" | "pending" | "inactive";
+  accessibility: string;
 }
 
 export function usePollingStations(district?: string, constituency?: string) {

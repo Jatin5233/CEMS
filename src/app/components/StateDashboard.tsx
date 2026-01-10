@@ -1,28 +1,54 @@
 import { useState } from "react";
 import { Users, FileText, MapPin, Clock, ChevronDown, Filter } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { useStateDashboardData } from "../../hooks/useStateDashboardData";
 
 export function StateDashboard() {
   const [selectedState, setSelectedState] = useState("Maharashtra");
   const [selectedDistrict, setSelectedDistrict] = useState("All");
 
-  const states = ["Maharashtra", "Karnataka", "Tamil Nadu", "Uttar Pradesh", "West Bengal"];
-  const districts = ["All", "Mumbai", "Pune", "Nagpur", "Nashik", "Thane"];
+  const { data, loading, error } = useStateDashboardData(selectedState, selectedDistrict);
 
-  const districtData = [
-    { district: "Mumbai", electors: 987654, pending: 234, stations: 1245 },
-    { district: "Pune", electors: 765432, pending: 156, stations: 987 },
-    { district: "Nagpur", electors: 654321, pending: 89, stations: 876 },
-    { district: "Nashik", electors: 543210, pending: 112, stations: 765 },
-    { district: "Thane", electors: 876543, pending: 198, stations: 1098 },
-  ];
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-lg text-gray-600">Loading dashboard data...</div>
+        </div>
+      </div>
+    );
+  }
 
-  const constituencies = [
-    { name: "Mumbai North", electors: 234567, pending: 45, verified: 223, station: "PS-001 to PS-145" },
-    { name: "Mumbai South", electors: 198765, pending: 23, verified: 187, station: "PS-146 to PS-267" },
-    { name: "Mumbai Central", electors: 212345, pending: 34, verified: 201, station: "PS-268 to PS-389" },
-    { name: "Pune City", electors: 245678, pending: 56, verified: 234, station: "PS-001 to PS-178" },
-  ];
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-lg text-red-600">Error: {error}</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-lg text-gray-600">No data available</div>
+        </div>
+      </div>
+    );
+  }
+
+  const states = data.states || [];
+  const districts = data.districts || [];
+  const districtData = data.districtData || [];
+  const constituencies = data.constituencies || [];
+
+  // Calculate summary statistics
+  const totalElectors = districtData.reduce((sum, district) => sum + district.electors, 0);
+  const totalPending = districtData.reduce((sum, district) => sum + district.pending, 0);
+  const totalStations = districtData.reduce((sum, district) => sum + district.stations, 0);
+  const totalConstituencyPending = constituencies.reduce((sum, constituency) => sum + constituency.pending, 0);
 
   return (
     <div className="space-y-6">
@@ -73,7 +99,7 @@ export function StateDashboard() {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm text-gray-600">State Total Electors</p>
-              <p className="text-2xl font-semibold text-gray-900 mt-2">88.7L</p>
+              <p className="text-2xl font-semibold text-gray-900 mt-2">{(totalElectors / 100000).toFixed(1)}L</p>
               <p className="text-xs text-gray-500 mt-1">{selectedState}</p>
             </div>
             <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -86,7 +112,7 @@ export function StateDashboard() {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm text-gray-600">Pending Form-6</p>
-              <p className="text-2xl font-semibold text-gray-900 mt-2">789</p>
+              <p className="text-2xl font-semibold text-gray-900 mt-2">{totalPending + totalConstituencyPending}</p>
               <p className="text-xs text-orange-600 mt-1">Awaiting approval</p>
             </div>
             <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
@@ -99,7 +125,7 @@ export function StateDashboard() {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm text-gray-600">Polling Stations</p>
-              <p className="text-2xl font-semibold text-gray-900 mt-2">5,971</p>
+              <p className="text-2xl font-semibold text-gray-900 mt-2">{totalStations.toLocaleString()}</p>
               <p className="text-xs text-gray-500 mt-1">Active</p>
             </div>
             <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -112,7 +138,7 @@ export function StateDashboard() {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm text-gray-600">Verification Queue</p>
-              <p className="text-2xl font-semibold text-gray-900 mt-2">1,234</p>
+              <p className="text-2xl font-semibold text-gray-900 mt-2">{totalConstituencyPending}</p>
               <p className="text-xs text-blue-600 mt-1">In progress</p>
             </div>
             <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">

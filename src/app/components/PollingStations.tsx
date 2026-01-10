@@ -1,59 +1,50 @@
 import { MapPin, Users, Search } from "lucide-react";
 import { useState } from "react";
+import { usePollingStations } from "../../hooks/usePollingStations";
 
 export function PollingStations() {
   const [viewMode, setViewMode] = useState<"list" | "map">("list");
 
-  const stations = [
-    {
-      id: "PS-001",
-      name: "Government Primary School, Shivaji Nagar",
-      nameLocal: "शासकीय प्राथमिक शाळा, शिवाजी नगर",
-      constituency: "Pune City (AC-154)",
-      address: "Shivaji Nagar, Pune - 411005",
-      electors: 987,
-      male: 512,
-      female: 475,
-      status: "active",
-      accessibility: "wheelchair",
-    },
-    {
-      id: "PS-002",
-      name: "Municipal High School, Camp Area",
-      nameLocal: "नगर निगम हायस्कूल, कॅम्प एरिया",
-      constituency: "Pune City (AC-154)",
-      address: "Camp, Pune - 411001",
-      electors: 1234,
-      male: 645,
-      female: 589,
-      status: "active",
-      accessibility: "wheelchair",
-    },
-    {
-      id: "PS-003",
-      name: "Community Center, Kothrud",
-      nameLocal: "सामुदायिक केंद्र, कोथरूड",
-      constituency: "Pune City (AC-154)",
-      address: "Kothrud, Pune - 411038",
-      electors: 876,
-      male: 432,
-      female: 444,
-      status: "active",
-      accessibility: "ramp",
-    },
-    {
-      id: "PS-004",
-      name: "Vidya Mandir School, Deccan",
-      nameLocal: "विद्या मंदिर शाळा, डेक्कन",
-      constituency: "Pune City (AC-154)",
-      address: "Deccan Gymkhana, Pune - 411004",
-      electors: 1098,
-      male: 567,
-      female: 531,
-      status: "active",
-      accessibility: "wheelchair",
-    },
-  ];
+  const { stations, loading, error } = usePollingStations();
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-lg text-gray-600">Loading polling stations...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-lg text-red-600">Error: {error}</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Calculate summary statistics
+  const totalStations = stations.length;
+  const totalElectors = stations.reduce((sum, station) => sum + station.electors, 0);
+  const avgPerStation = totalStations > 0 ? Math.round(totalElectors / totalStations) : 0;
+  const accessibleStations = stations.filter(station => station.accessibility !== "none").length;
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "active":
+        return "bg-green-100 text-green-700";
+      case "pending":
+        return "bg-yellow-100 text-yellow-700";
+      case "inactive":
+        return "bg-red-100 text-red-700";
+      default:
+        return "bg-gray-100 text-gray-700";
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -108,7 +99,7 @@ export function PollingStations() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Total Stations</p>
-              <p className="text-2xl font-semibold text-gray-900 mt-1">5,971</p>
+              <p className="text-2xl font-semibold text-gray-900 mt-1">{totalStations.toLocaleString()}</p>
             </div>
             <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
               <MapPin className="w-5 h-5 text-[#003d82]" />
@@ -120,7 +111,7 @@ export function PollingStations() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Total Electors</p>
-              <p className="text-2xl font-semibold text-gray-900 mt-1">88.7L</p>
+              <p className="text-2xl font-semibold text-gray-900 mt-1">{(totalElectors / 100000).toFixed(1)}L</p>
             </div>
             <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
               <Users className="w-5 h-5 text-green-600" />
@@ -132,7 +123,7 @@ export function PollingStations() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Avg. per Station</p>
-              <p className="text-2xl font-semibold text-gray-900 mt-1">1,486</p>
+              <p className="text-2xl font-semibold text-gray-900 mt-1">{avgPerStation.toLocaleString()}</p>
             </div>
             <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
               <Users className="w-5 h-5 text-purple-600" />
@@ -144,7 +135,7 @@ export function PollingStations() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Accessible</p>
-              <p className="text-2xl font-semibold text-gray-900 mt-1">4,876</p>
+              <p className="text-2xl font-semibold text-gray-900 mt-1">{accessibleStations.toLocaleString()}</p>
             </div>
             <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
               <MapPin className="w-5 h-5 text-orange-600" />
@@ -167,8 +158,8 @@ export function PollingStations() {
                     <div>
                       <div className="flex items-center gap-3 mb-1">
                         <h3 className="font-semibold text-gray-900">{station.name}</h3>
-                        <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs">
-                          Active
+                        <span className={`px-2 py-1 rounded text-xs capitalize ${getStatusBadge(station.status)}`}>
+                          {station.status}
                         </span>
                       </div>
                       <p className="text-sm text-gray-600">{station.nameLocal}</p>
